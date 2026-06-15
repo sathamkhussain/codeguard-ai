@@ -26,6 +26,11 @@ codeguard-ai/
 │   ├── tools.py             # 5 vulnerability scanner tools with multi-language patterns
 │   ├── mock_agent.py        # Demo mode — realistic responses without an API key
 │   └── prompts.py           # System prompt for the security analyst persona
+├── skills/
+│   ├── base.py              # BaseSkill — shared interface (run + stream)
+│   ├── report_skill.py      # SecurityReportSkill — downloadable professional report
+│   ├── fix_skill.py         # AutoFixSkill — corrected code with inline comments
+│   └── mock_skills.py       # Demo mode skills — no API key required
 ├── utils/
 │   └── image_utils.py       # Code screenshot → base64 encoder for vision API
 ├── requirements.txt
@@ -233,17 +238,77 @@ Mock responses cover all 4 example vulnerability types — SQL injection, hardco
 
 ---
 
+### 8. Skills
+
+**Files:** `skills/base.py`, `skills/report_skill.py`, `skills/fix_skill.py`
+
+Skills are reusable, single-purpose Claude capabilities — each with its own dedicated system prompt, model configuration, and clean input/output contract. Unlike the scanner agent (which orchestrates multiple tools), each Skill does exactly one thing and can be imported and used independently anywhere.
+
+**Base Skill class (`skills/base.py`):**
+
+```python
+class BaseSkill:
+    system_prompt: str = ""     # Each skill defines its own persona
+    model: str = "claude-opus-4-5"
+    max_tokens: int = 2048
+
+    def run(self, prompt: str) -> str:
+        """Non-streaming — returns full response."""
+
+    def stream(self, prompt: str) -> Generator[str, None, None]:
+        """Streaming — yields tokens as they arrive."""
+```
+
+**SecurityReportSkill (`skills/report_skill.py`):**
+
+Transforms raw scan output into a structured, professional security report with executive summary, risk overview table, findings, and recommendations. Output is downloadable as a `.md` file.
+
+```python
+from skills.report_skill import SecurityReportSkill
+
+report = SecurityReportSkill().generate(scan_output)
+# Returns a formatted markdown security report
+```
+
+**AutoFixSkill (`skills/fix_skill.py`):**
+
+Takes vulnerable code and returns a fully corrected, production-safe version. Every changed line has an inline comment explaining why it was changed. Also outputs a "Changes Made" section summarising all fixes applied.
+
+```python
+from skills.fix_skill import AutoFixSkill
+
+fixed_code = AutoFixSkill().fix(
+    vulnerable_code=code,
+    vulnerabilities=scan_findings,
+    language="python"
+)
+# Returns corrected code with inline comments
+```
+
+**Why Skills as a pattern:**
+
+| Aspect | Value |
+|---|---|
+| **Reusability** | Import any skill into a different project in one line |
+| **Separation of concerns** | Scanner finds bugs. Report skill formats. Fix skill corrects. Each does one thing. |
+| **Composability** | Chain skills: scan → report → fix → done |
+| **Prompt caching** | Each skill caches its own system prompt independently |
+| **Demo mode** | `skills/mock_skills.py` provides identical interfaces without an API key |
+
+---
+
 ## Summary
 
 | Claude Feature | Implementation |
 |---|---|
 | Tool Use + Agentic Loop | 5 scanners, automatic loop in `scanner/agent.py` |
+| Skills | `SecurityReportSkill` + `AutoFixSkill` in `skills/` — reusable, single-purpose capabilities |
 | Vision | Base64 code screenshot passed as multimodal content block |
-| Prompt Caching | `cache_control: ephemeral` on system prompt in `scanner/client.py` |
+| Prompt Caching | `cache_control: ephemeral` on system prompt + each skill prompt |
 | Multi-turn Conversation | Full history forwarded on every follow-up question |
 | Streaming | `client.messages.stream()` + `st.write_stream()` |
 | Extended Thinking | `thinking: {type: enabled, budget_tokens: 10000}` in Deep Scan mode |
-| Demo Mode | Auto-fallback mock agent when no API key is present |
+| Demo Mode | Auto-fallback mock agent and mock skills when no API key is present |
 
 ---
 
