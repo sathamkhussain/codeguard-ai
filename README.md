@@ -1,66 +1,63 @@
-# ⚡ DEWA Smart Assistant
+# 🛡️ CodeGuard AI — Code Vulnerability Scanner
 
-An AI-powered assistant for Dubai Electricity and Water Authority (DEWA) customers — built with **Claude** to showcase key Anthropic API capabilities.
+An AI-powered security scanner that analyses code for vulnerabilities — built with **Claude** to showcase key Anthropic API capabilities.
 
-## Claude Features Demonstrated
+## What It Does
 
-| Feature | Where Used |
+- Paste any code snippet or upload a screenshot — CodeGuard scans it instantly
+- Detects SQL Injection, XSS, hardcoded secrets, insecure functions, and auth flaws
+- Provides severity ratings (Critical / High / Medium / Low) and concrete fixes
+- Follow-up chat to ask questions about any finding
+- Works with Python, JavaScript, PHP, Java, SQL, Go, Ruby, and more
+
+## Claude Features
+
+| Feature | How It's Used |
 |---|---|
-| **Tool Use** | 5 custom tools with automatic agentic loop |
-| **Vision** | Upload a DEWA bill photo for AI extraction & analysis |
-| **Prompt Caching** | System prompt cached with `cache_control` for reduced latency & cost |
-| **Multi-turn Conversation** | Full chat history forwarded each turn |
-| **Streaming** | Token-by-token streaming for conversational responses |
-| **Extended Thinking** | Deep analysis mode with budgeted reasoning (`thinking: enabled`) |
-
-## Available Tools
-
-- `get_tariff_rates` — Residential & commercial electricity/water rates (tiered pricing)
-- `calculate_savings` — Monthly/annual AED savings for a given consumption reduction
-- `check_outage_status` — Active or planned outages by Dubai area
-- `get_account_summary` — Account balance, last bill, 6-month consumption history
-- `analyze_consumption` — Trend detection, peak/low months, variance, saving insights
+| **Tool Use + Agentic Loop** | 5 vulnerability scanners run automatically; Claude calls tools and loops until scan is complete |
+| **Vision** | Upload a code screenshot — Claude reads and analyses it as an image |
+| **Prompt Caching** | System prompt cached with `cache_control` to reduce latency and cost |
+| **Multi-turn Conversation** | Ask follow-up questions about findings after the scan |
+| **Streaming** | Results stream token-by-token in real time |
+| **Extended Thinking** | Deep Scan mode gives Claude a 10k-token reasoning budget for thorough analysis |
+| **Demo Mode** | Auto-fallback mock agent runs without an API key |
 
 ## Quick Start
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/YOUR_USERNAME/dewa-smart-assistant.git
-cd dewa-smart-assistant
+git clone https://github.com/sathamkhussain/dw-smart-assistant.git
+cd dw-smart-assistant
 pip install -r requirements.txt
 
-# 2. Add your API key
+# Add API key (skip for demo mode)
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env: ANTHROPIC_API_KEY=sk-ant-...
 
-# 3. Run
 streamlit run app.py
+# Open http://localhost:8501
 ```
 
 ## Project Structure
 
 ```
-dewa-smart-assistant/
-├── app.py                  # Streamlit UI
-├── assistant/
+├── app.py                  # Streamlit UI — dark cyber theme
+├── scanner/
 │   ├── agent.py            # Agentic loop — tool use, streaming, extended thinking
-│   ├── client.py           # Claude client + prompt caching helper
-│   ├── tools.py            # Tool schemas & implementations
-│   └── prompts.py          # System prompt
+│   ├── client.py           # Claude client + prompt caching
+│   ├── tools.py            # 5 vulnerability scanner tools
+│   ├── prompts.py          # System prompt
+│   └── mock_agent.py       # Demo mode (no API key required)
 ├── utils/
-│   └── image_utils.py      # Bill image → base64 for vision API
-├── data/
-│   └── tariffs.json        # DEWA tariff data
+│   └── image_utils.py      # Code screenshot encoder for vision API
 └── requirements.txt
 ```
 
 ## Getting an API Key
 
 1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Sign in or create an account
-3. Navigate to **API Keys** → **Create Key**
-4. Copy the key and paste it in your `.env` file as `ANTHROPIC_API_KEY`
+2. Sign in → **API Keys** → **Create Key**
+3. Add to `.env` as `ANTHROPIC_API_KEY=sk-ant-...`
 
-## Built for CCA-F
+---
 
-This project was built as a portfolio showcase for the Claude Certified Architect (Foundations) cohort application, demonstrating practical AI integration in a government utility context.
+*Built as a CCA-F (Claude Certified Architect — Foundations) portfolio project.*

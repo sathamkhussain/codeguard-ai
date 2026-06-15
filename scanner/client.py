@@ -17,11 +17,11 @@ def get_client() -> anthropic.Anthropic:
     if _client is None:
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY is not set. Add it to your .env file.")
+            raise ValueError("ANTHROPIC_API_KEY is not set.")
         _client = anthropic.Anthropic(api_key=api_key)
     return _client
 
 
-def cached_system(text: str) -> list[dict]:
-    """Wrap a system prompt for prompt caching (5-min TTL on Anthropic side)."""
+def cached_system(text: str) -> list:
+    """System prompt with prompt caching enabled."""
     return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
