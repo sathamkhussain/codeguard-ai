@@ -25,8 +25,8 @@ An AI-powered security scanner that analyses code for vulnerabilities — built 
 ## Quick Start
 
 ```bash
-git clone https://github.com/sathamkhussain/dw-smart-assistant.git
-cd dw-smart-assistant
+git clone https://github.com/sathamkhussain/codeguard-ai.git
+cd codeguard-ai
 pip install -r requirements.txt
 
 # Add API key (skip for demo mode)

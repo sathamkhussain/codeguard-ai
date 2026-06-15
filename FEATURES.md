@@ -265,4 +265,4 @@ streamlit run app.py
 ---
 
 *Built as a CCA-F (Claude Certified Architect — Foundations) portfolio project.*
-*GitHub: https://github.com/sathamkhussain/dw-smart-assistant*
+*GitHub: https://github.com/sathamkhussain/codeguard-ai*
