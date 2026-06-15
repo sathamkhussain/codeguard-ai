@@ -11,9 +11,13 @@ from utils.image_utils import encode_image
 
 if has_api_key():
     from scanner.agent import CodeGuardAgent as ActiveAgent
+    from skills.report_skill import SecurityReportSkill
+    from skills.fix_skill import AutoFixSkill
     DEMO_MODE = False
 else:
     from scanner.mock_agent import MockCodeGuardAgent as ActiveAgent  # type: ignore
+    from skills.mock_skills import MockSecurityReportSkill as SecurityReportSkill  # type: ignore
+    from skills.mock_skills import MockAutoFixSkill as AutoFixSkill  # type: ignore
     DEMO_MODE = True
 
 # ── Page config ───────────────────────────────────────────────────────────────
@@ -194,8 +198,14 @@ if "pending_scan" not in st.session_state:
     st.session_state.pending_scan = None
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
+if "report_skill" not in st.session_state:
+    st.session_state.report_skill = SecurityReportSkill()
+if "fix_skill" not in st.session_state:
+    st.session_state.fix_skill = AutoFixSkill()
 
 agent = st.session_state.agent
+report_skill = st.session_state.report_skill
+fix_skill = st.session_state.fix_skill
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -350,9 +360,51 @@ if st.session_state.pending_scan:
     st.session_state.messages.append({"role": "assistant", "content": result})
     st.session_state.last_result = result
 
-# ── Follow-up chat ────────────────────────────────────────────────────────────
+# ── Skills panel ─────────────────────────────────────────────────────────────
 if st.session_state.last_result:
     st.divider()
+    st.markdown("### ⚡ Skills")
+    st.caption("Reusable Claude skills — run on top of your scan results.")
+
+    col_report, col_fix = st.columns(2)
+
+    with col_report:
+        st.markdown("**📄 Security Report Skill**")
+        st.caption("Transforms scan output into a clean, downloadable report.")
+        if st.button("Generate Report", use_container_width=True):
+            with st.spinner("Generating professional report..."):
+                report = report_skill.generate(st.session_state.last_result)
+            st.markdown(report)
+            st.download_button(
+                label="⬇️ Download Report (.md)",
+                data=report,
+                file_name="security_report.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+
+    with col_fix:
+        st.markdown("**🔧 Auto-Fix Skill**")
+        st.caption("Generates a fully corrected version of your vulnerable code.")
+        code_to_fix = st.text_area(
+            "Paste the vulnerable code to fix",
+            height=100,
+            key="fix_input",
+            label_visibility="collapsed",
+            placeholder="Paste the vulnerable code here...",
+        )
+        if st.button("Auto-Fix Code", use_container_width=True, disabled=not code_to_fix.strip()):
+            with st.spinner("Generating secure version..."):
+                fixed = fix_skill.fix(
+                    vulnerable_code=code_to_fix,
+                    vulnerabilities=st.session_state.last_result,
+                )
+            st.markdown(fixed)
+
+    st.divider()
+
+# ── Follow-up chat ────────────────────────────────────────────────────────────
+if st.session_state.last_result:
     st.markdown("### 💬 Ask a follow-up")
     st.caption("Ask Claude to explain a vulnerability, show a fix, or scan something else.")
 
