@@ -160,6 +160,79 @@ safe_path = pathlib.Path(path).resolve()
 
 **Verdict:** ⛔ Critical risk — remote code execution vulnerabilities. Patch immediately."""
 
+SWIFT_RESPONSE = """## 🔍 Scan Complete — 4 Vulnerabilities Found
+
+---
+
+### 🔴 CRITICAL — Hardcoded API Key
+**Line 1:** `let apiKey = "sk-abc123secretkey"`
+
+**Why it's dangerous:**
+Anyone with access to this file — teammates, CI logs, git history — has your API key. Even if deleted later, it lives forever in git history.
+
+**Fixed version:**
+```swift
+// Store in environment or secure config — never hardcode
+let apiKey = ProcessInfo.processInfo.environment["API_KEY"] ?? ""
+```
+
+---
+
+### 🔴 CRITICAL — Sensitive Data in UserDefaults
+**Line 2:** `UserDefaults.standard.set(password, forKey: "userPassword")`
+
+**Why it's dangerous:**
+UserDefaults is stored unencrypted on disk. Any app with file system access can read it. Passwords must never go here.
+
+**Fixed version:**
+```swift
+// Use Keychain for sensitive data
+let query: [String: Any] = [
+    kSecClass as String: kSecClassGenericPassword,
+    kSecAttrAccount as String: "userPassword",
+    kSecValueData as String: password.data(using: .utf8)!
+]
+SecItemAdd(query as CFDictionary, nil)
+```
+
+---
+
+### 🟠 HIGH — Secret Logged via NSLog
+**Line 3:** `NSLog("Token: \\(authToken)")`
+
+**Why it's dangerous:**
+NSLog output is visible in the device console and can be captured by other apps or included in crash reports.
+
+**Fixed version:**
+```swift
+// Never log sensitive values — remove entirely or use #if DEBUG
+#if DEBUG
+print("Auth flow completed") // log the event, not the value
+#endif
+```
+
+---
+
+### 🔴 CRITICAL — SQL Injection via String Interpolation
+**Line 4:** `let query = "SELECT * FROM users WHERE id = \\(userId)"`
+
+**Why it's dangerous:**
+Swift string interpolation in SQL queries is just as dangerous as concatenation. An attacker can inject arbitrary SQL through `userId`.
+
+**Fixed version:**
+```swift
+// Use parameterised SQLite statements
+var statement: OpaquePointer?
+sqlite3_prepare_v2(db, "SELECT * FROM users WHERE id = ?", -1, &statement, nil)
+sqlite3_bind_text(statement, 1, userId, -1, nil)
+```
+
+---
+
+## 📊 Security Score: 10 / 100
+
+**Verdict:** ⛔ Critical risk — hardcoded secrets, insecure storage, and SQL injection. Do not ship."""
+
 DEFAULT_RESPONSE = """## 🔍 Scan Complete
 
 I'm running in **Demo Mode** — paste one of the example snippets from the sidebar to see a full vulnerability report.
@@ -170,12 +243,15 @@ I'm running in **Demo Mode** — paste one of the example snippets from the side
 - 🔴 Hardcoded Secrets & API Keys
 - 🟠 Dangerous Functions (eval, exec, pickle)
 - 🟡 Authentication Flaws
+- 🍎 Swift-specific vulnerabilities (UserDefaults, NSLog, Keychain misuse)
 
 Add your `ANTHROPIC_API_KEY` to `.env` to enable real Claude-powered scanning."""
 
 
 def _pick(message: str) -> str:
     msg = message.lower()
+    if "userdefaults" in msg or "nslog" in msg or "swift" in msg or "keychain" in msg:
+        return SWIFT_RESPONSE
     if "sql" in msg or "select" in msg or "query" in msg:
         return SQL_RESPONSE
     if "secret" in msg or "api_key" in msg or "password" in msg:
